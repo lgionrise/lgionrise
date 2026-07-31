@@ -44,7 +44,15 @@ useEffect(() => {
     });
     const data = await res.json();
 
+    // src/app/teacher/live-classes/schedule/page.tsx — handleSubmit ke andar
     if (!res.ok) { setError(data.error || "Failed to schedule class."); setIsLoading(false); return; }
+
+    if (!data.public_id) {
+      setError("Class scheduled, but couldn't open it. Please check Upcoming Classes.");
+      setIsLoading(false);
+      return;
+    }
+
     router.push(`/teacher/live-classes/${data.public_id}`);
   };
 
