@@ -46,10 +46,6 @@ export default function StudentLiveClassPage({ params }: { params: Promise<{ pub
           headers: { "Authorization": `Bearer ${token}` }
         });
         
-        // Note: If your API route for students is different, change the URL above.
-        // Assuming the same /api/teacher/... proxy works or use direct API URL:
-        // const joinRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/live-classes/${publicId}/join/`, ...
-        
         if (!joinRes.ok) throw new Error("Could not join class. Invalid ID or not started.");
         const { channel_name, token: agoraToken, app_id, uid } = await joinRes.json();
 
@@ -124,6 +120,10 @@ export default function StudentLiveClassPage({ params }: { params: Promise<{ pub
     if (!newMessage.trim()) return;
 
     const token = localStorage.getItem("lgion_access_token");
+    
+    // ✅ FIX: Ensure token is not null before passing it to fetchChatMessages
+    if (!token) return; 
+
     try {
       const res = await fetch(`/api/teacher/live-classes/${publicId}/chat/`, {
         method: "POST",
