@@ -36,6 +36,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     let mounted = true;
     async function getCameras() {
       try {
+        // Request permission first so browser shows actual camera names
         await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const devices = await AgoraRTC.getCameras();
         if (mounted) {
@@ -73,16 +74,12 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
 
         await client.join(app_id, channel_name, token, uid);
 
-        const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
-          undefined,
-          selectedCameraId ? { cameraId: selectedCameraId } : undefined
-        );
+        const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
 
         localAudioTrackRef.current = audioTrack;
         localVideoTrackRef.current = videoTrack;
 
         if (videoRef.current) {
-          videoRef.current.innerHTML = ''; // Clear before playing
           videoTrack.play(videoRef.current);
         }
         await client.publish([audioTrack, videoTrack]);
@@ -92,7 +89,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
         console.error(err);
         if (mounted) {
           setConnectionState("error");
-          setErrorMessage(err instanceof Error ? err.message : "Failed to start class. Check permissions.");
+          setErrorMessage(err instanceof Error ? err.message : "Failed to start class. Check camera/mic permissions.");
         }
       }
     }
@@ -120,39 +117,24 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     setIsCameraOff(!isCameraOff);
   };
 
-  // 5. 🌟 SWITCH CAMERA LOGIC (FIXED)
+  // 5. 🌟 SWITCH CAMERA LOGIC (OFFICIAL AGORA WAY - NO PERMISSION ISSUES)
   const switchCamera = async (newDeviceId: string) => {
-    if (!clientRef.current || !localVideoTrackRef.current) return;
+    if (!localVideoTrackRef.current) return;
 
     try {
       setConnectionState("reconnecting");
       
-      // Step A: Unpublish and close the old video track
-      await clientRef.current.unpublish(localVideoTrackRef.current);
-      localVideoTrackRef.current.close();
-
-      // Step B: Create a new video track with the new cameraId
-      const newVideoTrack = await AgoraRTC.createCameraVideoTrack({
-        cameraId: newDeviceId
-      });
-      localVideoTrackRef.current = newVideoTrack;
-
-      // Step C: ✅ CRITICAL FIX - Clear old video element before playing new one
-      if (videoRef.current) {
-        videoRef.current.innerHTML = ''; 
-        newVideoTrack.play(videoRef.current);
-      }
+      // ✅ This is the magic line: setDevice switches the camera seamlessly 
+      // without unpublishing, closing, or asking for permissions again.
+      await localVideoTrackRef.current.setDevice(newDeviceId);
       
-      // Step D: Publish the new track
-      await clientRef.current.publish(newVideoTrack);
-
       setSelectedCameraId(newDeviceId);
       setShowCameraMenu(false);
       setConnectionState("live");
     } catch (err) {
       console.error("Failed to switch camera:", err);
-      setErrorMessage("Failed to switch camera. Please check permissions.");
-      setConnectionState("error"); // Prevents getting stuck on "Switching..."
+      setErrorMessage("Camera is busy or blocked. Please close other apps (Zoom/Teams) using the camera and try again.");
+      setConnectionState("error");
     }
   };
 
@@ -198,7 +180,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
            connectionState === "reconnecting" ? "Switching Camera…" : "Connection Error"}
         </span>
         
-        {/* Camera Selector Dropdown (Desktop) - Z-INDEX FIXED TO z-[100] */}
+        {/* Camera Selector Dropdown */}
         {cameras.length > 1 && (
           <div className="relative">
             <button 
@@ -240,8 +222,8 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
         
         {connectionState === "error" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-50">
-            <div className="text-center">
-              <p className="text-red-300 text-sm max-w-sm text-center px-4 mb-4">{errorMessage}</p>
+            <div className="text-center p-4">
+              <p className="text-red-300 text-sm max-w-sm text-center mb-4">{errorMessage}</p>
               <button 
                 onClick={() => window.location.reload()} 
                 className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm"
