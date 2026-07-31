@@ -36,13 +36,13 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     let mounted = true;
     async function getCameras() {
       try {
-        // Request permission first so browser shows actual camera names (not just "Camera 1")
+        // Request permission first so browser shows actual camera names
         await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const devices = await AgoraRTC.getCameras();
         if (mounted) {
           setCameras(devices);
           if (devices.length > 0 && !selectedCameraId) {
-            setSelectedCameraId(devices[0].deviceId); // Default to first camera
+            setSelectedCameraId(devices[0].deviceId);
           }
         }
       } catch (err) {
@@ -74,10 +74,11 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
 
         await client.join(app_id, channel_name, token, uid);
 
-        // Create tracks with selected camera ID (if available)
-        const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({
-          cameraConfig: selectedCameraId ? { deviceId: { exact: selectedCameraId } } : undefined,
-        });
+        // ✅ FIXED: Agora expects (audioConfig, videoConfig) as two separate arguments
+        const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
+          undefined, // Audio config (keep default)
+          selectedCameraId ? { deviceId: { exact: selectedCameraId } } : undefined // Video config
+        );
 
         localAudioTrackRef.current = audioTrack;
         localVideoTrackRef.current = videoTrack;
@@ -104,7 +105,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
       localVideoTrackRef.current?.close();
       clientRef.current?.leave();
     };
-  }, [publicId, selectedCameraId]); // Re-run if selectedCameraId changes on initial load
+  }, [publicId, selectedCameraId]);
 
   // 3. Toggle Mic
   const toggleMic = async () => {
@@ -120,20 +121,20 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     setIsCameraOff(!isCameraOff);
   };
 
-  // 5. 🌟 SWITCH CAMERA LOGIC (The Magic for Smartboard/Back Camera)
+  // 5. 🌟 SWITCH CAMERA LOGIC
   const switchCamera = async (newDeviceId: string) => {
     if (!clientRef.current || !localVideoTrackRef.current) return;
 
     try {
-      setConnectionState("reconnecting"); // Show brief loading state
+      setConnectionState("reconnecting");
       
       // Step A: Unpublish and close the old video track
       await clientRef.current.unpublish(localVideoTrackRef.current);
       localVideoTrackRef.current.close();
 
-      // Step B: Create a new video track with the new device ID
+      // ✅ FIXED: Removed 'cameraConfig' wrapper, passed deviceId directly to video config
       const newVideoTrack = await AgoraRTC.createCameraVideoTrack({
-        cameraConfig: { deviceId: { exact: newDeviceId } }
+        deviceId: { exact: newDeviceId }
       });
       localVideoTrackRef.current = newVideoTrack;
 
@@ -152,7 +153,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     }
   };
 
-  // 6. Quick Flip (For Mobile: toggles between first two cameras)
+  // 6. Quick Flip (For Mobile)
   const quickFlipCamera = () => {
     if (cameras.length < 2) return;
     const currentIndex = cameras.findIndex(cam => cam.deviceId === selectedCameraId);
@@ -269,7 +270,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
           {isCameraOff ? <VideoOff className="w-6 h-6" /> : <VideoIcon className="w-6 h-6" />}
         </button>
 
-        {/* 🌟 Quick Flip Button (Only shows if multiple cameras exist - Great for Mobile) */}
+        {/* 🌟 Quick Flip Button (Only shows if multiple cameras exist) */}
         {cameras.length > 1 && (
           <button onClick={quickFlipCamera} className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-full transition-all" title="Flip Camera">
             <RefreshCw className="w-6 h-6" />
