@@ -4,9 +4,27 @@
 import { useEffect, useRef, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Megaphone, Camera, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Megaphone, Camera, RefreshCw, ChevronDown, ChevronUp, RotateCw } from "lucide-react";
 
 type ConnectionState = "connecting" | "live" | "reconnecting" | "error";
+
+// Helper to manage per-camera flip preferences in localStorage
+const CAMERA_PREFS_KEY = "lgion_camera_prefs";
+
+function getCameraPrefs(): Record<string, { flipped: boolean }> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(CAMERA_PREFS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveCameraPref(cameraId: string, flipped: boolean) {
+  const prefs = getCameraPrefs();
+  prefs[cameraId] = { flipped };
+  localStorage.setItem(CAMERA_PREFS_KEY, JSON.stringify(prefs));
+}
 
 export default function LiveClassHostPage({ params }: { params: Promise<{ publicId: string }> }) {
   const { publicId } = use(params);
@@ -26,6 +44,9 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [showCameraMenu, setShowCameraMenu] = useState(false);
+  
+  // 🌟 NEW: Video Flip State (per camera)
+  const [isVideoFlipped, setIsVideoFlipped] = useState(false);
 
   const clientRef = useRef<IAgoraRTCClient | null>(null);
   const localVideoTrackRef = useRef<ICameraVideoTrack | null>(null);
@@ -36,13 +57,18 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     let mounted = true;
     async function getCameras() {
       try {
-        // Request permission first so browser shows actual camera names
         await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const devices = await AgoraRTC.getCameras();
         if (mounted) {
           setCameras(devices);
           if (devices.length > 0 && !selectedCameraId) {
-            setSelectedCameraId(devices[0].deviceId);
+            const firstCamId = devices[0].deviceId;
+            setSelectedCameraId(firstCamId);
+            // Load saved flip preference for this camera
+            const prefs = getCameraPrefs();
+            if (prefs[firstCamId]?.flipped) {
+              setIsVideoFlipped(true);
+            }
           }
         }
       } catch (err) {
@@ -75,7 +101,6 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
         await client.join(app_id, channel_name, token, uid);
 
         const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-
         localAudioTrackRef.current = audioTrack;
         localVideoTrackRef.current = videoTrack;
 
@@ -117,28 +142,42 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     setIsCameraOff(!isCameraOff);
   };
 
-  // 5. 🌟 SWITCH CAMERA LOGIC (OFFICIAL AGORA WAY - NO PERMISSION ISSUES)
+  // 5. 🌟 SWITCH CAMERA LOGIC (with auto-flip preference load)
   const switchCamera = async (newDeviceId: string) => {
     if (!localVideoTrackRef.current) return;
 
     try {
       setConnectionState("reconnecting");
-      
-      // ✅ This is the magic line: setDevice switches the camera seamlessly 
-      // without unpublishing, closing, or asking for permissions again.
       await localVideoTrackRef.current.setDevice(newDeviceId);
       
       setSelectedCameraId(newDeviceId);
       setShowCameraMenu(false);
+      
+      // Load saved flip preference for this camera
+      const prefs = getCameraPrefs();
+      const shouldBeFlipped = prefs[newDeviceId]?.flipped || false;
+      setIsVideoFlipped(shouldBeFlipped);
+      
       setConnectionState("live");
     } catch (err) {
       console.error("Failed to switch camera:", err);
-      setErrorMessage("Camera is busy or blocked. Please close other apps (Zoom/Teams) using the camera and try again.");
+      setErrorMessage("Camera is busy or blocked. Please close other apps using the camera.");
       setConnectionState("error");
     }
   };
 
-  // 6. Quick Flip (For Mobile)
+  // 6. 🌟 FLIP VIDEO (180° rotation for upside-down cameras)
+  const toggleVideoFlip = () => {
+    const newFlipped = !isVideoFlipped;
+    setIsVideoFlipped(newFlipped);
+    
+    // Save preference for current camera
+    if (selectedCameraId) {
+      saveCameraPref(selectedCameraId, newFlipped);
+    }
+  };
+
+  // 7. Quick Flip Camera
   const quickFlipCamera = () => {
     if (cameras.length < 2) return;
     const currentIndex = cameras.findIndex(cam => cam.deviceId === selectedCameraId);
@@ -146,7 +185,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     switchCamera(cameras[nextIndex].deviceId);
   };
 
-  // 7. Announcement & End Class
+  // 8. Announcement & End Class
   const handleAnnounce = async () => {
     if (!announceText.trim()) return;
     await fetch(`/api/teacher/live-classes/${publicId}/announcements`, {
@@ -217,8 +256,24 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
       </div>
 
       {/* Video Container */}
-      <div className="flex-1 relative bg-black">
-        <div ref={videoRef} className="w-full h-full object-cover" />
+      <div className="flex-1 relative bg-black overflow-hidden">
+        <div 
+          ref={videoRef} 
+          className="w-full h-full object-cover"
+          style={{
+            // 🌟 CSS transform for flipping video 180°
+            transform: isVideoFlipped ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.3s ease-in-out',
+          }}
+        />
+        
+        {/* Flip Indicator Badge */}
+        {isVideoFlipped && (
+          <div className="absolute top-4 left-4 bg-blue-600/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 z-40">
+            <RotateCw className="w-3 h-3" />
+            Video Flipped
+          </div>
+        )}
         
         {connectionState === "error" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-50">
@@ -252,27 +307,38 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
       )}
 
       {/* Bottom Controls Bar */}
-      <div className="flex items-center justify-center gap-3 sm:gap-6 py-6 bg-slate-900/80 backdrop-blur-sm px-4 relative z-[60]">
-        <button onClick={toggleMic} className={`p-4 rounded-full transition-all ${isMuted ? "bg-red-600 hover:bg-red-700" : "bg-slate-800 hover:bg-slate-700"} text-white`}>
-          {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+      <div className="flex items-center justify-center gap-2 sm:gap-4 py-6 bg-slate-900/80 backdrop-blur-sm px-4 relative z-[60] flex-wrap">
+        <button onClick={toggleMic} className={`p-3 sm:p-4 rounded-full transition-all ${isMuted ? "bg-red-600 hover:bg-red-700" : "bg-slate-800 hover:bg-slate-700"} text-white`}>
+          {isMuted ? <MicOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
         </button>
 
-        <button onClick={toggleCamera} className={`p-4 rounded-full transition-all ${isCameraOff ? "bg-red-600 hover:bg-red-700" : "bg-slate-800 hover:bg-slate-700"} text-white`}>
-          {isCameraOff ? <VideoOff className="w-6 h-6" /> : <VideoIcon className="w-6 h-6" />}
+        <button onClick={toggleCamera} className={`p-3 sm:p-4 rounded-full transition-all ${isCameraOff ? "bg-red-600 hover:bg-red-700" : "bg-slate-800 hover:bg-slate-700"} text-white`}>
+          {isCameraOff ? <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <VideoIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+        </button>
+
+        {/* 🌟 NEW: Flip Video Button */}
+        <button 
+          onClick={toggleVideoFlip} 
+          className={`p-3 sm:p-4 rounded-full transition-all text-white ${
+            isVideoFlipped ? "bg-blue-600 hover:bg-blue-700" : "bg-slate-800 hover:bg-slate-700"
+          }`}
+          title={isVideoFlipped ? "Unflip Video" : "Flip Video 180°"}
+        >
+          <RotateCw className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
         {cameras.length > 1 && (
-          <button onClick={quickFlipCamera} className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-full transition-all" title="Flip Camera">
-            <RefreshCw className="w-6 h-6" />
+          <button onClick={quickFlipCamera} className="bg-slate-800 hover:bg-slate-700 text-white p-3 sm:p-4 rounded-full transition-all" title="Switch Camera">
+            <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         )}
 
-        <button onClick={() => setShowAnnounce(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-full transition-all">
-          <Megaphone className="w-6 h-6" />
+        <button onClick={() => setShowAnnounce(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-3 sm:p-4 rounded-full transition-all">
+          <Megaphone className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
-        <button onClick={handleEndClass} className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full transition-all shadow-lg shadow-red-900/50">
-          <PhoneOff className="w-6 h-6" />
+        <button onClick={handleEndClass} className="bg-red-600 hover:bg-red-700 text-white p-3 sm:p-4 rounded-full transition-all shadow-lg shadow-red-900/50">
+          <PhoneOff className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
       </div>
     </div>
