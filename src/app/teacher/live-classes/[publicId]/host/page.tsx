@@ -74,10 +74,10 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
 
         await client.join(app_id, channel_name, token, uid);
 
-        // ✅ FIXED: Agora expects (audioConfig, videoConfig) as two separate arguments
+        // ✅ FIXED: Agora uses 'cameraId' (string), NOT 'deviceId'
         const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
           undefined, // Audio config (keep default)
-          selectedCameraId ? { deviceId: { exact: selectedCameraId } } : undefined // Video config
+          selectedCameraId ? { cameraId: selectedCameraId } : undefined // Video config
         );
 
         localAudioTrackRef.current = audioTrack;
@@ -132,9 +132,9 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
       await clientRef.current.unpublish(localVideoTrackRef.current);
       localVideoTrackRef.current.close();
 
-      // ✅ FIXED: Removed 'cameraConfig' wrapper, passed deviceId directly to video config
+      // ✅ FIXED: Use 'cameraId' directly here too
       const newVideoTrack = await AgoraRTC.createCameraVideoTrack({
-        deviceId: { exact: newDeviceId }
+        cameraId: newDeviceId
       });
       localVideoTrackRef.current = newVideoTrack;
 
