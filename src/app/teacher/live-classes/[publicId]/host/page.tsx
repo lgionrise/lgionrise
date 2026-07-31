@@ -36,7 +36,6 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     let mounted = true;
     async function getCameras() {
       try {
-        // Request permission first so browser shows actual camera names
         await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const devices = await AgoraRTC.getCameras();
         if (mounted) {
@@ -46,7 +45,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
           }
         }
       } catch (err) {
-        console.error("Camera permission denied or not available:", err);
+        console.error("Camera permission denied:", err);
       }
     }
     getCameras();
@@ -74,16 +73,16 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
 
         await client.join(app_id, channel_name, token, uid);
 
-        // ✅ FIXED: Agora uses 'cameraId' (string), NOT 'deviceId'
         const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
-          undefined, // Audio config (keep default)
-          selectedCameraId ? { cameraId: selectedCameraId } : undefined // Video config
+          undefined,
+          selectedCameraId ? { cameraId: selectedCameraId } : undefined
         );
 
         localAudioTrackRef.current = audioTrack;
         localVideoTrackRef.current = videoTrack;
 
         if (videoRef.current) {
+          videoRef.current.innerHTML = ''; // Clear before playing
           videoTrack.play(videoRef.current);
         }
         await client.publish([audioTrack, videoTrack]);
@@ -93,7 +92,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
         console.error(err);
         if (mounted) {
           setConnectionState("error");
-          setErrorMessage(err instanceof Error ? err.message : "Failed to start class. Check camera/mic permissions.");
+          setErrorMessage(err instanceof Error ? err.message : "Failed to start class. Check permissions.");
         }
       }
     }
@@ -105,7 +104,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
       localVideoTrackRef.current?.close();
       clientRef.current?.leave();
     };
-  }, [publicId, selectedCameraId]);
+  }, [publicId]);
 
   // 3. Toggle Mic
   const toggleMic = async () => {
@@ -121,7 +120,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     setIsCameraOff(!isCameraOff);
   };
 
-  // 5. 🌟 SWITCH CAMERA LOGIC
+  // 5. 🌟 SWITCH CAMERA LOGIC (FIXED)
   const switchCamera = async (newDeviceId: string) => {
     if (!clientRef.current || !localVideoTrackRef.current) return;
 
@@ -132,16 +131,19 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
       await clientRef.current.unpublish(localVideoTrackRef.current);
       localVideoTrackRef.current.close();
 
-      // ✅ FIXED: Use 'cameraId' directly here too
+      // Step B: Create a new video track with the new cameraId
       const newVideoTrack = await AgoraRTC.createCameraVideoTrack({
         cameraId: newDeviceId
       });
       localVideoTrackRef.current = newVideoTrack;
 
-      // Step C: Play the new track and publish it to Agora
+      // Step C: ✅ CRITICAL FIX - Clear old video element before playing new one
       if (videoRef.current) {
+        videoRef.current.innerHTML = ''; 
         newVideoTrack.play(videoRef.current);
       }
+      
+      // Step D: Publish the new track
       await clientRef.current.publish(newVideoTrack);
 
       setSelectedCameraId(newDeviceId);
@@ -150,6 +152,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
     } catch (err) {
       console.error("Failed to switch camera:", err);
       setErrorMessage("Failed to switch camera. Please check permissions.");
+      setConnectionState("error"); // Prevents getting stuck on "Switching..."
     }
   };
 
@@ -184,7 +187,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
   return (
     <div className="fixed inset-0 bg-slate-950 flex flex-col z-50">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-900/80 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-900/80 backdrop-blur-sm relative z-[60]">
         <span className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-2 ${
           connectionState === "live" ? "bg-red-600 text-white animate-pulse" :
           connectionState === "error" ? "bg-red-900 text-red-200" : "bg-slate-700 text-slate-300"
@@ -195,12 +198,12 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
            connectionState === "reconnecting" ? "Switching Camera…" : "Connection Error"}
         </span>
         
-        {/* Camera Selector Dropdown (Desktop) */}
+        {/* Camera Selector Dropdown (Desktop) - Z-INDEX FIXED TO z-[100] */}
         {cameras.length > 1 && (
           <div className="relative">
             <button 
               onClick={() => setShowCameraMenu(!showCameraMenu)}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border border-slate-700"
             >
               <Camera className="w-4 h-4" />
               <span className="max-w-[150px] truncate">
@@ -210,8 +213,8 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
             </button>
 
             {showCameraMenu && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
-                <div className="p-2 text-xs text-slate-400 font-semibold uppercase tracking-wider">Available Cameras</div>
+              <div className="absolute right-0 top-full mt-2 w-72 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl z-[100] overflow-hidden">
+                <div className="p-2 text-xs text-slate-400 font-semibold uppercase tracking-wider bg-slate-900/50">Available Cameras</div>
                 {cameras.map((cam) => (
                   <button
                     key={cam.deviceId}
@@ -220,9 +223,9 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
                       selectedCameraId === cam.deviceId ? "bg-blue-600/20 text-blue-400" : "text-slate-200"
                     }`}
                   >
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-4 h-4 flex-shrink-0" />
                     <span className="truncate">{cam.label || `Camera ${cam.deviceId.slice(0, 4)}`}</span>
-                    {selectedCameraId === cam.deviceId && <span className="ml-auto text-blue-400 text-xs">Active</span>}
+                    {selectedCameraId === cam.deviceId && <span className="ml-auto text-blue-400 text-xs font-bold">Active</span>}
                   </button>
                 ))}
               </div>
@@ -236,15 +239,23 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
         <div ref={videoRef} className="w-full h-full object-cover" />
         
         {connectionState === "error" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-            <p className="text-red-300 text-sm max-w-sm text-center px-4">{errorMessage}</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-50">
+            <div className="text-center">
+              <p className="text-red-300 text-sm max-w-sm text-center px-4 mb-4">{errorMessage}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                Reload Page
+              </button>
+            </div>
           </div>
         )}
       </div>
 
       {/* Announcement Popup */}
       {showAnnounce && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-white rounded-xl p-4 w-full max-w-sm mx-4 shadow-2xl border border-slate-200">
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-white rounded-xl p-4 w-full max-w-sm mx-4 shadow-2xl border border-slate-200 z-[70]">
           <textarea
             value={announceText} onChange={(e) => setAnnounceText(e.target.value)} rows={2}
             placeholder="Type announcement for students..."
@@ -259,30 +270,25 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
       )}
 
       {/* Bottom Controls Bar */}
-      <div className="flex items-center justify-center gap-3 sm:gap-6 py-6 bg-slate-900/80 backdrop-blur-sm px-4">
-        {/* Mic Toggle */}
+      <div className="flex items-center justify-center gap-3 sm:gap-6 py-6 bg-slate-900/80 backdrop-blur-sm px-4 relative z-[60]">
         <button onClick={toggleMic} className={`p-4 rounded-full transition-all ${isMuted ? "bg-red-600 hover:bg-red-700" : "bg-slate-800 hover:bg-slate-700"} text-white`}>
           {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
         </button>
 
-        {/* Camera On/Off Toggle */}
         <button onClick={toggleCamera} className={`p-4 rounded-full transition-all ${isCameraOff ? "bg-red-600 hover:bg-red-700" : "bg-slate-800 hover:bg-slate-700"} text-white`}>
           {isCameraOff ? <VideoOff className="w-6 h-6" /> : <VideoIcon className="w-6 h-6" />}
         </button>
 
-        {/* 🌟 Quick Flip Button (Only shows if multiple cameras exist) */}
         {cameras.length > 1 && (
           <button onClick={quickFlipCamera} className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-full transition-all" title="Flip Camera">
             <RefreshCw className="w-6 h-6" />
           </button>
         )}
 
-        {/* Announcement */}
         <button onClick={() => setShowAnnounce(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-full transition-all">
           <Megaphone className="w-6 h-6" />
         </button>
 
-        {/* End Class */}
         <button onClick={handleEndClass} className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full transition-all shadow-lg shadow-red-900/50">
           <PhoneOff className="w-6 h-6" />
         </button>
