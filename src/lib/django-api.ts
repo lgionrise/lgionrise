@@ -32,23 +32,33 @@ export async function djangoFetch(path: string, options: FetchOptions = {}) {
   return response;
 }
 
-async function tryRefreshToken(): Promise < string | null > {
+// src/lib/django-api.ts — tryRefreshToken function update karo
+
+async function tryRefreshToken(): Promise<string | null> {
   const refreshToken = await getRefreshToken();
   if (!refreshToken) return null;
-  
+
   const res = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh: refreshToken }),
   });
-  
+
   if (!res.ok) {
     await clearSessionCookies();
     return null;
   }
-  
+
   const data = await res.json();
-  await setSessionCookies(data.access, refreshToken);
+
+  // CRITICAL: backend has ROTATE_REFRESH_TOKENS=True + BLACKLIST_AFTER_ROTATION=True
+  // — the refresh token we just sent is now invalidated server-side, and the
+  // response includes a NEW refresh token that must replace it. Reusing the
+  // old (now-blacklisted) refresh token on the next 401 would silently fail
+  // and log the user out — this was the actual cause of the random
+  // "redirected to login" behavior.
+  const newRefreshToken = data.refresh || refreshToken;
+  await setSessionCookies(data.access, newRefreshToken);
   return data.access;
 }
 
