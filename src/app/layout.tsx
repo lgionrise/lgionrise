@@ -1,33 +1,40 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// src/app/layout.tsx
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { QueryProvider } from "@/components/providers/query-provider";
+import { ServiceWorkerRegister } from "@/components/providers/service-worker-register";
 
 export const metadata: Metadata = {
-  title: "LGIONRISE",
-  description: "LGIONRISE Teacher Dashboard is currently under development.",
+  title: "Learn and Grow",
+  description: "Live classes, batches, and tests — Learn and Grow",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "LGIONRISE",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,        // native app feel — user can't pinch-zoom the UI
+  userScalable: false,
+  themeColor: "#4F46E5",  // Android status bar color matches app theme
+  viewportFit: "cover",   // full-bleed on notch/punch-hole screens
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en">
+      <body className="antialiased bg-slate-50 overscroll-none">
+        <QueryProvider>{children}</QueryProvider>
+        <ServiceWorkerRegister />
+      </body>
     </html>
   );
 }
