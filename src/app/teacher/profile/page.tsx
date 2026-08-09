@@ -2,11 +2,17 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { TeacherProfileDetail } from "@/types/teacher-profile";
+import { AvatarUpload } from "@/components/ui/avatar-upload";
 import { getErrorMessage } from "@/lib/utils";
-import { Loader2, BadgeCheck, X } from "lucide-react";
+import { Loader2, BadgeCheck, X, LogOut } from "lucide-react";
+
+interface AccountInfo { first_name: string; last_name: string; email: string; profile_photo: string | null }
 
 export default function TeacherProfilePage() {
+  const router = useRouter();
+  const [account, setAccount] = useState<AccountInfo | null>(null);
   const [profile, setProfile] = useState<TeacherProfileDetail | null>(null);
   const [subjectInput, setSubjectInput] = useState("");
   const [error, setError] = useState("");
@@ -15,11 +21,24 @@ export default function TeacherProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/teacher/profile")
-      .then((r) => r.json())
-      .then((data) => setProfile(data))
-      .finally(() => setIsLoading(false));
+    Promise.all([
+      fetch("/api/auth/me").then((r) => r.json()),
+      fetch("/api/teacher/profile").then((r) => r.json()),
+    ]).then(([meData, profileData]) => {
+      setAccount(meData.user);
+      setProfile(profileData);
+    }).finally(() => setIsLoading(false));
   }, []);
+
+  const handleAvatarUploaded = async (url: string) => {
+    await fetch("/api/auth/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile_photo: url }),
+    });
+    setAccount((prev) => prev ? { ...prev, profile_photo: url } : prev);
+    router.refresh();
+  };
 
   const addSubject = () => {
     if (!subjectInput.trim() || !profile) return;
@@ -49,46 +68,48 @@ export default function TeacherProfilePage() {
     setIsSaving(false);
   };
 
-  if (isLoading) return <p className="text-slate-500 text-sm">Loading...</p>;
-  if (!profile) return <p className="text-red-600 text-sm">Could not load profile.</p>;
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  };
+
+  if (isLoading) return <p className="text-slate-500 text-sm p-5">Loading...</p>;
+  if (!profile || !account) return <p className="text-red-600 text-sm p-5">Could not load profile.</p>;
 
   return (
-    <div className="max-w-xl">
-      <div className="flex items-center gap-2 mb-6">
-        <h1 className="text-xl font-semibold text-slate-900">Professional Profile</h1>
+    <div className="px-5 pt-8 pb-4 max-w-xl">
+      <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-6 text-center text-white mb-6">
+        <AvatarUpload
+          currentUrl={account.profile_photo} firstName={account.first_name} lastName={account.last_name}
+          onUploaded={handleAvatarUploaded}
+        />
+        <h1 className="font-bold text-lg mt-3">{account.first_name} {account.last_name}</h1>
+        <p className="text-white/70 text-sm">{account.email}</p>
         {profile.has_verification_badge && (
-          <span className="flex items-center gap-1 text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-xs font-medium bg-white/20 px-2.5 py-1 rounded-full mt-2">
             <BadgeCheck className="w-3.5 h-3.5" /> Verified
           </span>
         )}
       </div>
 
-      <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+      <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Bio</label>
-          <textarea
-            rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
-          />
+          <textarea rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50" />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Qualifications</label>
-          <textarea
-            rows={2} value={profile.qualifications} onChange={(e) => setProfile({ ...profile, qualifications: e.target.value })}
-            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
-          />
+          <textarea rows={2} value={profile.qualifications} onChange={(e) => setProfile({ ...profile, qualifications: e.target.value })}
+            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50" />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Years of Experience</label>
-          <input
-            type="number" value={profile.years_of_experience}
+          <input type="number" value={profile.years_of_experience}
             onChange={(e) => setProfile({ ...profile, years_of_experience: parseInt(e.target.value) || 0 })}
-            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
-          />
+            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50" />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Subjects</label>
           <div className="flex flex-wrap gap-2 mb-2">
@@ -103,48 +124,32 @@ export default function TeacherProfilePage() {
             <input
               value={subjectInput} onChange={(e) => setSubjectInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSubject(); } }}
-              placeholder="Add a subject and press Enter"
-              className="flex-1 px-3.5 py-2 border border-slate-300 rounded-lg text-sm"
+              placeholder="Add a subject" className="flex-1 px-3.5 py-2 border border-slate-200 rounded-xl text-sm bg-slate-50"
             />
-            <button type="button" onClick={addSubject} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium px-4 rounded-lg">
-              Add
-            </button>
+            <button type="button" onClick={addSubject} className="bg-slate-100 text-slate-700 text-sm font-medium px-4 rounded-xl">Add</button>
           </div>
         </div>
 
-        {[
-          { key: "video_intro_url" as const, label: "Video Intro URL" },
-          { key: "youtube_url" as const, label: "YouTube URL" },
-          { key: "linkedin_url" as const, label: "LinkedIn URL" },
-          { key: "other_social_url" as const, label: "Other Social URL" },
-        ].map((field) => (
-          <div key={field.key}>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">{field.label}</label>
-            <input
-              value={profile[field.key]} onChange={(e) => setProfile({ ...profile, [field.key]: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
-            />
-          </div>
-        ))}
-
         <label className="flex items-center gap-2.5 text-sm text-slate-700">
-          <input
-            type="checkbox" checked={profile.is_profile_visible}
+          <input type="checkbox" checked={profile.is_profile_visible}
             onChange={(e) => setProfile({ ...profile, is_profile_visible: e.target.checked })}
-            className="rounded border-slate-300 text-indigo-600"
-          />
+            className="rounded border-slate-300 text-indigo-600" />
           Make profile visible to students
         </label>
 
-        {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
-        {message && <p className="text-sm text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">{message}</p>}
+        {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5">{error}</p>}
+        {message && <p className="text-sm text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl px-3.5 py-2.5">{message}</p>}
 
         <button type="submit" disabled={isSaving}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium px-6 py-2.5 rounded-lg text-sm flex items-center gap-2">
+          className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold py-3 rounded-xl text-sm flex items-center justify-center gap-2">
           {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
           Save Profile
         </button>
       </form>
+
+      <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-red-600 font-medium text-sm mt-4 py-3">
+        <LogOut className="w-4 h-4" /> Logout
+      </button>
     </div>
   );
 }
