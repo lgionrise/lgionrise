@@ -5,6 +5,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Course } from "@/types/batch";
 import { Loader2 } from "lucide-react";
+import { ThumbnailUpload } from "@/components/ui/thumbnail-upload";
 
 export default function CreateBatchPage() {
   const router = useRouter();
@@ -61,6 +62,10 @@ export default function CreateBatchPage() {
 
       <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
         <div>
+          <ThumbnailUpload
+            currentUrl={form.thumbnail_url}
+            onUploaded={(url) => setForm({ ...form, thumbnail_url: url })}
+          />
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Title</label>
           <input
             required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
