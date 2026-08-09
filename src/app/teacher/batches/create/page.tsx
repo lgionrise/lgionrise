@@ -14,7 +14,7 @@ export default function CreateBatchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
     title: "", course: "", description: "", language: "hinglish", status: "draft",
-    price: "", discounted_price: "", validity_start: "", validity_end: "", max_students: "",
+    price: "", discounted_price: "", validity_start: "", validity_end: "", max_students: "",thumbnail_url: "",
   });
 
   useEffect(() => {
