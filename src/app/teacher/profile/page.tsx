@@ -22,11 +22,19 @@ export default function TeacherProfilePage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/auth/me").then((r) => r.json()),
-      fetch("/api/teacher/profile").then((r) => r.json()),
-    ]).then(([meData, profileData]) => {
-      setAccount(meData.user);
-      setProfile(profileData);
+      fetch("/api/auth/me").then(async (r) => ({ ok: r.ok, status: r.status, data: await r.json() })),
+      fetch("/api/teacher/profile").then(async (r) => ({ ok: r.ok, status: r.status, data: await r.json() })),
+    ]).then(([meResult, profileResult]) => {
+      if (!meResult.ok) {
+        setError(`Session error (${meResult.status}): ${meResult.data.detail || meResult.data.reason || "please log in again."}`);
+        return;
+      }
+      if (!profileResult.ok) {
+        setError(`Profile load failed (${profileResult.status}): ${profileResult.data.error || "unknown error"}`);
+        return;
+      }
+      setAccount(meResult.data.user);
+      setProfile(profileResult.data);
     }).finally(() => setIsLoading(false));
   }, []);
 
