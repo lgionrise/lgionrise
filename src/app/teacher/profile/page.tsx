@@ -83,7 +83,9 @@ export default function TeacherProfilePage() {
   };
 
   if (isLoading) return <p className="text-slate-500 text-sm p-5">Loading...</p>;
-  if (!profile || !account) return <p className="text-red-600 text-sm p-5">Could not load profile.</p>;
+  if (isLoading) return <p className="text-slate-500 text-sm p-5">Loading...</p>;
+  if (error) return <p className="text-red-600 text-sm p-5 bg-red-50 rounded-xl m-5">{error}</p>;
+  if (!profile || !account) return <p className="text-red-600 text-sm p-5">Could not load profile — unknown reason.</p>;
 
   return (
     <div className="px-5 pt-8 pb-4 max-w-xl">
