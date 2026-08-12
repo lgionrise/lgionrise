@@ -12,9 +12,9 @@ export default function ScheduleClassPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
-    batch: "", title: "", scheduled_start: "", scheduled_end: "",
-    recording_enabled: true, chat_enabled: true, student_camera_allowed: false, student_mic_allowed: false,
-  });
+  batch: "", title: "", subject: "", scheduled_start: "", scheduled_end: "",
+  recording_enabled: true, chat_enabled: true, student_camera_allowed: false, student_mic_allowed: false,
+});
 
   // src/app/teacher/live-classes/schedule/page.tsx — useEffect update karo
 useEffect(() => {
@@ -74,6 +74,9 @@ useEffect(() => {
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Class Title</label>
           <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
             className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm" />
+          <input placeholder="Subject (e.g. Physics)" value={form.subject}
+  onChange={(e) => setForm({ ...form, subject: e.target.value })}
+  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
