@@ -29,6 +29,7 @@ html {
 
 body {
   -webkit-touch-callout: none;
+  overflow-x: hidden;
   touch-action: manipulation; /* removes the ~300ms tap delay browsers add */
 }
 
