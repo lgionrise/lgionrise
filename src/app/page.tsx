@@ -29,7 +29,7 @@ export default function Home() {
           </a>
 
           <a
-            href="mailto:support@lgionrise.com"
+            href="mailto:lgionrise@gmail.com"
             className="rounded-xl border border-gray-600 px-8 py-4 hover:bg-white/10"
           >
             Contact Us
