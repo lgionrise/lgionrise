@@ -5,6 +5,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, GraduationCap } from "lucide-react";
+import { BrandLogo } from "@/components/shared/brand-logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function LoginPage() {
         <div className="bg-white/15 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur">
           <GraduationCap className="w-8 h-8" />
         </div>
+        <BrandLogo size={64} />
         <h1 className="text-2xl font-bold">Welcome back</h1>
         <p className="text-white/70 text-sm mt-1">Log in to continue learning</p>
       </div>
