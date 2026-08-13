@@ -41,6 +41,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-600 to-violet-700 flex flex-col">
+      <div className="pt-16 pb-8 px-6 text-center text-white">
         <div className="bg-white/15 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur">
           <GraduationCap className="w-8 h-8" />
         </div>
