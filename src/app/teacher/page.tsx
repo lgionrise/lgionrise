@@ -25,7 +25,7 @@ export default async function TeacherDashboardPage() {
     <div>
       <MobileTopBar firstName={user.first_name} lastName={user.last_name} photoUrl={user.profile_photo} role="teacher" />
 
-      <div className="px-5 -mt-3 lg:mt-6">
+      <div className="px-4 pt-24 lg:pt-6 pb-5">
         {!data ? (
           <p className="text-red-600 bg-white rounded-2xl p-4 shadow-sm">Could not load dashboard. Please refresh.</p>
         ) : (
