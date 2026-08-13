@@ -3,67 +3,75 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { MobileTopBar } from "@/components/shared/mobile-top-bar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DoubtListItem } from "@/types/doubt";
 import { cn, formatDateTime } from "@/lib/utils";
+import { HelpCircle, MessageCircleQuestion } from "lucide-react";
 
-const statusStyles: Record<string, string> = {
+const statusColor: Record<string, string> = {
   open: "bg-amber-100 text-amber-700",
   answered: "bg-indigo-100 text-indigo-700",
   resolved: "bg-emerald-100 text-emerald-700",
   reopened: "bg-rose-100 text-rose-700",
 };
 
-export default function DoubtsPage() {
+export default function TeacherDoubtsPage() {
   const [doubts, setDoubts] = useState<DoubtListItem[]>([]);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [filter, setFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const params = statusFilter ? `?status=${statusFilter}` : "";
-    fetch(`/api/teacher/doubts${params}`)
-      .then((r) => r.json())
-      .then((data) => setDoubts(data.results || []))
-      .finally(() => setIsLoading(false));
-  }, [statusFilter]);
+    setIsLoading(true);
+    fetch(`/api/teacher/doubts${filter ? `?status=${filter}` : ""}`)
+      .then((r) => r.json()).then((d) => setDoubts(d.results || [])).finally(() => setIsLoading(false));
+  }, [filter]);
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold text-slate-900 mb-6">Doubts</h1>
+    <>
+      <MobileTopBar firstName="" lastName="" role="teacher" />
+      <div className="pt-24 px-4 pb-5">
+        <h1 className="text-lg font-bold text-slate-900 mb-3">Doubts</h1>
 
-      <div className="flex gap-2 mb-4">
-        {["", "open", "answered", "resolved", "reopened"].map((s) => (
-          <button
-            key={s} onClick={() => setStatusFilter(s)}
-            className={cn("text-xs font-medium px-3 py-1.5 rounded-full capitalize",
-              statusFilter === s ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}
-          >
-            {s || "All"}
-          </button>
-        ))}
-      </div>
-
-      {isLoading ? (
-        <p className="text-slate-500 text-sm">Loading...</p>
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-          {doubts.map((doubt) => (
-            <Link key={doubt.public_id} href={`/teacher/doubts/${doubt.public_id}`} className="flex items-center justify-between px-5 py-4 hover:bg-slate-50">
-              <div className="flex-1 pr-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium">{doubt.student_name}</span>
-                  {doubt.priority === "urgent" && <span className="text-xs font-medium text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">Urgent</span>}
-                </div>
-                <p className="text-sm text-slate-500 line-clamp-1">{doubt.text_content}</p>
-                <p className="text-xs text-slate-400 mt-1">{formatDateTime(doubt.created_at)} • {doubt.reply_count} replies</p>
-              </div>
-              <span className={cn("text-xs font-medium px-2.5 py-1 rounded-full capitalize", statusStyles[doubt.status])}>
-                {doubt.status}
-              </span>
-            </Link>
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+          {["", "open", "answered", "resolved", "reopened"].map((s) => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={cn("text-xs font-semibold px-3.5 py-1.5 rounded-full whitespace-nowrap capitalize",
+                filter === s ? "bg-indigo-600 text-white" : "bg-white text-slate-600 shadow-sm")}>
+              {s || "All"}
+            </button>
           ))}
-          {doubts.length === 0 && <p className="text-sm text-slate-500 p-4">No doubts found.</p>}
         </div>
-      )}
-    </div>
+
+        {isLoading ? (
+          <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+        ) : doubts.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+            <MessageCircleQuestion className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm text-slate-500">No doubts here</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {doubts.map((d) => (
+              <Link key={d.public_id} href={`/teacher/doubts/${d.public_id}`} className="block bg-white rounded-2xl p-3.5 shadow-sm">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                      <HelpCircle className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 truncate">{d.student_name}</p>
+                  </div>
+                  <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize shrink-0", statusColor[d.status])}>
+                    {d.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 line-clamp-2 pl-10">{d.text_content}</p>
+                <p className="text-[10px] text-slate-400 mt-1 pl-10">{formatDateTime(d.created_at)} • {d.reply_count} replies</p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
