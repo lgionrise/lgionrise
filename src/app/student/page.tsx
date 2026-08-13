@@ -35,7 +35,7 @@ export default function StudentDashboardPage() {
     <div>
       <MobileTopBar firstName={user.first_name} lastName={user.last_name} role="student" />
 
-      <div className="px-5 -mt-3 lg:mt-6">
+      <div className="px-4 pt-24 lg:pt-6 pb-5">
         {liveClass && (
           <a
             href={`/student/live-classes/${liveClass.public_id}/watch`}
