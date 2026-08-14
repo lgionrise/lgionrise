@@ -7,7 +7,7 @@ interface UploadResult {
 
 export async function uploadToCloudinary(
   file: File,
-  folder: "profile-photos" | "batch-thumbnails" | "course-thumbnails"
+  folder: "profile-photos" | "batch-thumbnails" | "course-thumbnails" | "doubt-attachments"
 ): Promise<string> {
   const sigRes = await fetch(`/api/media/cloudinary-signature?folder=${folder}`);
   if (!sigRes.ok) throw new Error("Could not authorize upload.");
