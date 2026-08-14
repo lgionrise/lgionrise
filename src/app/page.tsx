@@ -24,7 +24,7 @@ const CONFIG = {
   ROLE_STORAGE: 'lgion_user_role',
 
   // GitHub gallery base URL - replace YOUR_USER and YOUR_REPO with actual
-  GALLERY_BASE: 'https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/gallery/',
+  GALLERY_BASE: 'https://raw.githubusercontent.com/lgionrise/assets/main/gallery/',
   GALLERY_IMAGES: Array.from({ length: 20 }, (_, i) => `image${i + 1}.jpg`),
 
   // Request timeout
