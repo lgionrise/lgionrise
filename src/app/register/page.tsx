@@ -26,12 +26,16 @@ export default function RegisterPage() {
     });
     const data = await res.json();
 
+    // src/app/register/page.tsx — handleSubmit ka end wala hissa check/replace karo
     if (!res.ok) { setError(data.error || "Registration failed."); setIsLoading(false); return; }
 
     if (data.requiresVerification) {
-      router.push("/verify-email");
+      // Account created but auto-login didn't happen — send them to login
+      // instead of a broken /verify-email page (which likely doesn't exist).
+      router.push("/login?registered=true");
       return;
     }
+
     router.push(form.role === "teacher" ? "/teacher" : "/student");
     router.refresh();
   };
