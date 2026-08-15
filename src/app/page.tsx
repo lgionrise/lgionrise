@@ -28,7 +28,7 @@ export default async function LandingPage() {
         <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BrandLogo size={36} />
-            <span className="font-bold text-slate-900">Learn and Grow</span>
+            <span className="font-bold text-slate-900">LGIONRISE</span>
           </div>
           <div className="hidden sm:flex items-center gap-3">
             <Link href="/batches" className="text-sm font-medium text-slate-600 hover:text-slate-900">Browse Batches</Link>
@@ -106,7 +106,7 @@ export default async function LandingPage() {
         <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <BrandLogo size={28} />
-            <span className="text-sm font-semibold text-slate-700">Learn and Grow</span>
+            <span className="text-sm font-semibold text-slate-700">LGIONRISE</span>
           </div>
           <p className="text-xs text-slate-400">© {new Date().getFullYear()} LGIONRISE. All rights reserved.</p>
         </div>
