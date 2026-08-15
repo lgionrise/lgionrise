@@ -105,7 +105,7 @@ export default async function LandingPage() {
       <footer className="border-t border-slate-200 mt-10">
         <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <BrandLogo size={28} />
+            <BrandLogo size={48} />
             <span className="text-sm font-semibold text-slate-700">LGIONRISE</span>
           </div>
           <p className="text-xs text-slate-400">© {new Date().getFullYear()} LGIONRISE. All rights reserved.</p>
