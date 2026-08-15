@@ -27,7 +27,7 @@ export default async function LandingPage() {
       <nav className="border-b border-slate-200 sticky top-0 bg-white/90 backdrop-blur z-30">
         <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BrandLogo size={36} />
+            <BrandLogo size={46} />
             <span className="font-bold text-slate-900">LGIONRISE</span>
           </div>
           <div className="hidden sm:flex items-center gap-3">
