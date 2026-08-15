@@ -7,8 +7,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // Drop your 20-25 images into public/gallery/ named gallery-1.jpg through
 // gallery-25.jpg — update TOTAL_IMAGES to match how many you actually add.
-const TOTAL_IMAGES = 25;
-const images = Array.from({ length: TOTAL_IMAGES }, (_, i) => `/gallery/gallery-${i + 1}.jpg`);
+const TOTAL_IMAGES = 20;
+const images = Array.from({ length: TOTAL_IMAGES }, (_, i) => `/gallery/image${i + 1}.jpg`);
 
 export function PhotoGallery() {
   const [current, setCurrent] = useState(0);
