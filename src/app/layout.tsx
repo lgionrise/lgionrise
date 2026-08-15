@@ -5,7 +5,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ServiceWorkerRegister } from "@/components/providers/service-worker-register";
 
 export const metadata: Metadata = {
-  title: "Learn and Grow",
+  title: "LGIONRISE",
   description: "Live classes, batches, and tests — Learn and Grow",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     title: "LGIONRISE",
   },
   icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
+    icon: "/icons/logo.png",
+    apple: "/logo.png",
   },
 };
 
