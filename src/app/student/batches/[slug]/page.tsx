@@ -50,6 +50,12 @@ export default function StudentBatchDetailPage({ params }: { params: Promise<{ s
 
   const handleEnroll = async () => {
     if (!batch) return;
+
+    if (typeof window.Razorpay === "undefined") {
+      setError("Payment system is still loading. Please wait a moment and try again.");
+      return;
+    }
+    
     setError(""); setIsEnrolling(true);
 
     const orderRes = await fetch("/api/student/orders/create", {
