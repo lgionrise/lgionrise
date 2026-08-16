@@ -54,7 +54,7 @@ export default function StudentDashboardPage() {
         <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
           <h2 className="text-sm font-semibold text-slate-700 mb-3">Quick Actions</h2>
           <div className="flex gap-4 overflow-x-auto pb-1">
-            <QuickActionButton label="My Batches" icon={BookOpen} color="indigo" href="/student/batches" />
+            <QuickActionButton label="Browse Batches" icon={BookOpen} color="indigo" href="/student/batches" />
             <QuickActionButton label="Recordings" icon={PlayCircle} color="teal" href="/student/recordings" />
             <QuickActionButton label="Tests" icon={ClipboardList} color="amber" href="/student/tests" />
             <QuickActionButton label="Doubts" icon={HelpCircle} color="rose" href="/student/doubts" />
