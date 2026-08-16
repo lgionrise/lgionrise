@@ -39,15 +39,14 @@ export default function TeacherProfilePage() {
   }, []);
 
   const handleAvatarUploaded = async (url: string) => {
-    await fetch("/api/auth/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profile_photo: url }),
+    const res = await fetch("/api/auth/profile", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profile_photo: url }),
     });
+    if (!res.ok) { alert("Could not save photo — please try again."); return; }
     setAccount((prev) => prev ? { ...prev, profile_photo: url } : prev);
     router.refresh();
   };
-
+  
   const addSubject = () => {
     if (!subjectInput.trim() || !profile) return;
     setProfile({ ...profile, subjects: [...profile.subjects, subjectInput.trim()] });
