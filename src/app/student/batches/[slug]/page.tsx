@@ -80,12 +80,10 @@ export default function StudentBatchDetailPage({ params }: { params: Promise<{ s
       order_id: order.order_id,
       handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
         const verifyRes = await fetch("/api/student/orders/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(response),
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(response),
         });
         if (verifyRes.ok) {
-          router.push("/student/batches");
+          router.push(`/student/batches/${slug}`);  // was: "/student/batches" — wrong page, showed the catalog not confirmation
           router.refresh();
         } else {
           setError("Payment verification failed. Contact support if the amount was deducted.");
