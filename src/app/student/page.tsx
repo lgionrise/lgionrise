@@ -63,7 +63,7 @@ export default function StudentDashboardPage() {
         </div>
 
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-slate-900">My Batches</h2>
+          <h2 className="font-semibold text-slate-900">Browse Batches</h2>
           <a href="/student/batches" className="text-xs font-medium text-indigo-600">See all</a>
         </div>
 
