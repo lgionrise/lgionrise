@@ -13,7 +13,7 @@ export default function BatchPlaylistPage({ params }: { params: Promise<{ slug: 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/student/batches/${slug}/recordings`).then((r) => r.json()).then((d) => setRecordings(d.results || [])).finally(() => setIsLoading(false));
+    fetch(`/api/teacher/batches/${slug}/recordings`) => r.json()).then((d) => setRecordings(d.results || [])).finally(() => setIsLoading(false));
   }, [slug]);
 
   return (
