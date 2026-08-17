@@ -6,7 +6,7 @@ interface UploadResult {
 }
 
 // src/lib/cloudinary-upload.ts — ye function add karo
-export async function uploadFileToCloudinary(
+export async function uploadToCloudinary(
   file: File,
   folder: "study-material"
 ): Promise<{ url: string; bytes: number }> {
