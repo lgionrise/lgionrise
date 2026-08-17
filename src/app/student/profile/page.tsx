@@ -21,10 +21,7 @@ export default function StudentProfilePage() {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profile_photo: url }),
     });
     const data = await res.json();
-    if (!res.ok) {
-      alert(`Could not save photo: ${data.error || `HTTP ${res.status}`}`);  // real reason, not generic text
-      return;
-    }
+    if (!res.ok) { alert(`Could not save photo: ${data.error || `HTTP ${res.status}`}`); return; }
     setAccount((prev) => prev ? { ...prev, profile_photo: url } : prev);
     router.refresh();
   };
@@ -35,26 +32,26 @@ export default function StudentProfilePage() {
     router.refresh();
   };
 
-  if (!account) return <p className="text-slate-500 text-sm p-5">Loading...</p>;
+  if (!account) return <p className="text-slate-500 text-sm p-5 pt-24">Loading...</p>;
 
   return (
-    <div className="px-5 pt-8 pb-4 max-w-xl">
-      <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-6 text-center text-white mb-6">
+    <div className="w-full max-w-xl mx-auto px-4 pt-24 pb-24 lg:pb-8 overflow-x-hidden">
+      <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-5 text-center text-white mb-5 w-full">
         <AvatarUpload
           currentUrl={account.profile_photo} firstName={account.first_name} lastName={account.last_name}
           onUploaded={handleAvatarUploaded}
         />
-        <h1 className="font-bold text-lg mt-3">{account.first_name} {account.last_name}</h1>
+        <h1 className="font-bold text-base mt-3 break-words px-2">{account.first_name} {account.last_name}</h1>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 mb-4">
-        <div className="flex items-center gap-3 px-5 py-4">
-          <Mail className="w-4 h-4 text-slate-400" />
-          <span className="text-sm text-slate-700">{account.email}</span>
+      <div className="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 mb-4 w-full">
+        <div className="flex items-center gap-3 px-4 py-3.5 min-w-0">
+          <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="text-sm text-slate-700 truncate">{account.email}</span>
         </div>
-        <div className="flex items-center gap-3 px-5 py-4">
-          <Phone className="w-4 h-4 text-slate-400" />
-          <span className="text-sm text-slate-700">{account.phone_number || "Not added"}</span>
+        <div className="flex items-center gap-3 px-4 py-3.5 min-w-0">
+          <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="text-sm text-slate-700 truncate">{account.phone_number || "Not added"}</span>
         </div>
       </div>
 
