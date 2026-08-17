@@ -20,7 +20,11 @@ export default function StudentProfilePage() {
     const res = await fetch("/api/auth/profile", {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profile_photo: url }),
     });
-    if (!res.ok) { alert("Could not save photo — please try again."); return; }
+    const data = await res.json();
+    if (!res.ok) {
+      alert(`Could not save photo: ${data.error || `HTTP ${res.status}`}`);  // real reason, not generic text
+      return;
+    }
     setAccount((prev) => prev ? { ...prev, profile_photo: url } : prev);
     router.refresh();
   };
