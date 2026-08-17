@@ -30,14 +30,12 @@ html, body {
 /* src/app/globals.css — file ke top mein, @tailwind directives ke baad add karo */
 
 html {
-  -webkit-tap-highlight-color: transparent; /* removes grey flash on tap — biggest "web feel" giveaway */
-  overscroll-behavior-y: none;              /* stops the rubber-band bounce at top/bottom */
+  -webkit-tap-highlight-color: transparent; /* removes grey flash on tap — biggest "web feel" giveaway */    /* stops the rubber-band bounce at top/bottom */
   scroll-behavior: smooth;
 }
 
 body {
-  -webkit-touch-callout: none;
-  touch-action: manipulation; /* removes the ~300ms tap delay browsers add */
+  -webkit-touch-callout: none;/* removes the ~300ms tap delay browsers add */
 }
 
 /* Prevent iOS/Android auto-zoom when focusing a form input (must be 16px+) */
