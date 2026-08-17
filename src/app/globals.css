@@ -4,7 +4,15 @@
   --background: #ffffff;
   --foreground: #171717;
 }
-
+/* src/app/globals.css — top mein add karo */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+* {
+  min-width: 0; /* flex/grid children ko content ke hisaab se overflow karne se rokta hai — yahi asli root cause hai */
+}
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
