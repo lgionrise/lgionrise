@@ -1,7 +1,7 @@
 // src/app/login/page.tsx
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, GraduationCap } from "lucide-react";
@@ -13,6 +13,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then(async (r) => {
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.user?.role === "teacher") router.replace("/teacher");
+      else if (data.user?.role === "student") router.replace("/student");
+    });
+  }, [router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
