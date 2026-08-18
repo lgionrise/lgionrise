@@ -5,6 +5,8 @@ import { useEffect, useRef, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import AgoraRTC, { IAgoraRTCClient } from "agora-rtc-sdk-ng";
 import { PhoneOff } from "lucide-react";
+import { useLiveClassChat } from "@/hooks/use-live-class-chat";
+import { ChatDrawer } from "@/components/live-class/chat-drawer";
 
 type ConnectionState = "connecting" | "live" | "reconnecting" | "error";
 
@@ -12,7 +14,8 @@ export default function StudentWatchPage({ params }: { params: Promise<{ publicI
   const { publicId } = use(params);
   const router = useRouter();
   const videoRef = useRef<HTMLDivElement>(null);
-
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const { messages, isConnected, sendMessage } = useLiveClassChat(publicId);
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
   const [errorMessage, setErrorMessage] = useState("");
   const clientRef = useRef<IAgoraRTCClient | null>(null);
