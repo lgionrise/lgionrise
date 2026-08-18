@@ -14,14 +14,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/auth/me").then(async (r) => {
-      if (!r.ok) return;
-      const data = await r.json();
-      if (data.user?.role === "teacher") router.replace("/teacher");
-      else if (data.user?.role === "student") router.replace("/student");
-    });
-  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
