@@ -1,52 +1,59 @@
 // src/app/register/page.tsx
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, GraduationCap, UserRound, BookOpenCheck } from "lucide-react";
+import { Loader2, UserRound, BookOpenCheck } from "lucide-react";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { cn } from "@/lib/utils";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [form, setForm] = useState({
     first_name: "", last_name: "", email: "", username: "", password: "", role: "student" as "student" | "teacher",
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(async (r) => {
+        if (!r.ok) return;
+        const data = await r.json();
+        if (data.user?.role === "teacher") router.replace("/teacher");
+        else if (data.user?.role === "student") router.replace("/student");
+      })
+      .finally(() => setIsCheckingSession(false));
+  }, [router]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(""); setIsLoading(true);
 
     const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
     });
     const data = await res.json();
 
-    // src/app/register/page.tsx — handleSubmit ka end wala hissa check/replace karo
     if (!res.ok) { setError(data.error || "Registration failed."); setIsLoading(false); return; }
 
     if (data.requiresVerification) {
-      // Account created but auto-login didn't happen — send them to login
-      // instead of a broken /verify-email page (which likely doesn't exist).
       router.push("/login?registered=true");
       return;
     }
-
     router.push(form.role === "teacher" ? "/teacher" : "/student");
     router.refresh();
   };
 
+  if (isCheckingSession) return null;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-600 to-violet-700 flex flex-col">
       <div className="pt-14 pb-8 px-6 text-center text-white">
-        <div className="bg-white/15 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur">
-          <GraduationCap className="w-8 h-8" />
-        </div>
-        <h1 className="text-2xl font-bold">Create your account</h1>
+        <BrandLogo size={64} />
+        <h1 className="text-2xl font-bold mt-4">Create your account</h1>
         <p className="text-white/70 text-sm mt-1">Join Learn and Grow today</p>
       </div>
 
@@ -55,20 +62,14 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <button
               type="button" onClick={() => setForm({ ...form, role: "student" })}
-              className={cn(
-                "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-colors",
-                form.role === "student" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white"
-              )}
+              className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border-2", form.role === "student" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white")}
             >
               <UserRound className={cn("w-6 h-6", form.role === "student" ? "text-indigo-600" : "text-slate-400")} />
               <span className={cn("text-sm font-semibold", form.role === "student" ? "text-indigo-600" : "text-slate-600")}>Student</span>
             </button>
             <button
               type="button" onClick={() => setForm({ ...form, role: "teacher" })}
-              className={cn(
-                "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-colors",
-                form.role === "teacher" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white"
-              )}
+              className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border-2", form.role === "teacher" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white")}
             >
               <BookOpenCheck className={cn("w-6 h-6", form.role === "teacher" ? "text-indigo-600" : "text-slate-400")} />
               <span className={cn("text-sm font-semibold", form.role === "teacher" ? "text-indigo-600" : "text-slate-600")}>Teacher</span>
@@ -84,7 +85,7 @@ export default function RegisterPage() {
                 onChange={(e) => setForm({ ...form, last_name: e.target.value })}
                 className="px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm" />
             </div>
-            <input required type="email" placeholder="Email address" value={form.email}
+            <input required type="email" placeholder="Email" value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm" />
             <input required placeholder="Username" value={form.username}
