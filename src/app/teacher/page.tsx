@@ -6,6 +6,7 @@ import { MobileTopBar } from "@/components/shared/mobile-top-bar";
 import { GradientCard } from "@/components/ui/gradient-card";
 import { QuickActionButton } from "@/components/ui/quick-action-button";
 import { formatCurrency } from "@/lib/utils";
+import { ClipboardList } from "lucide-react";
 import {
   Users, BookOpen, Video, Calendar, HelpCircle, Wallet,
   Plus, PlaySquare, Wallet as WalletIcon, FileText,
@@ -43,6 +44,7 @@ export default async function TeacherDashboardPage() {
                 <QuickActionButton label="New Class" icon={Video} color="rose" href="/teacher/live-classes/schedule" />
                 <QuickActionButton label="Add Batch" icon={Plus} color="indigo" href="/teacher/batches/create" />
                 <QuickActionButton label="Upload Video" icon={PlaySquare} color="teal" href="/teacher/recordings" />
+                <QuickActionButton label="Tests" icon={ClipboardList} color="indigo" href="/teacher/tests" />
                 <QuickActionButton label="Payments" icon={WalletIcon} color="amber" href="/teacher/earnings" />
                 <QuickActionButton label="Study Material" icon={FileText} color="sky" href="/teacher/content" />
               </div>
