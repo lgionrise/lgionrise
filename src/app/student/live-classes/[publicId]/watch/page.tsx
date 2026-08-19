@@ -14,11 +14,13 @@ export default function StudentWatchPage({ params }: { params: Promise<{ publicI
   const { publicId } = use(params);
   const router = useRouter();
   const videoRef = useRef<HTMLDivElement>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const { messages, isConnected, sendMessage } = useLiveClassChat(publicId);
+
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const clientRef = useRef<IAgoraRTCClient | null>(null);
+
+  const { messages, isConnected, sendMessage } = useLiveClassChat(publicId);
 
   useEffect(() => {
     let mounted = true;
@@ -32,9 +34,6 @@ export default function StudentWatchPage({ params }: { params: Promise<{ publicI
         }
         const { channel_name, token, app_id, uid } = await tokenRes.json();
 
-        // "audience" role — student subscribes to the teacher's stream only,
-        // never publishes their own camera/mic. Matches the backend's
-        // "subscriber" role returned for non-teacher join requests.
         const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
         clientRef.current = client;
         await client.setClientRole("audience");
@@ -107,7 +106,11 @@ export default function StudentWatchPage({ params }: { params: Promise<{ publicI
         )}
       </div>
 
-      <div className="flex items-center justify-center py-6">
+      <div className="flex items-center justify-center gap-3 py-6">
+        <ChatDrawer
+          messages={messages} isConnected={isConnected} onSend={sendMessage}
+          isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} onToggle={() => setIsChatOpen(true)}
+        />
         <button onClick={handleLeave} className="bg-red-600 hover:bg-red-700 text-white p-3.5 rounded-full">
           <PhoneOff className="w-5 h-5" />
         </button>
