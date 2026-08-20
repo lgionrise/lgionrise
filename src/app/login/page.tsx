@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { BrandLogo } from "@/components/shared/brand-logo";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,11 +68,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm"
             />
-            <input
-              type="password" required placeholder="Password" value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm"
-            />
+            <PasswordInput value={password} onChange={setPassword} />
             <div className="text-right">
               <Link href="/forgot-password" className="text-xs font-medium text-indigo-600">Forgot password?</Link>
             </div>
