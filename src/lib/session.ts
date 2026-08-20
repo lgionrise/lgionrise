@@ -29,6 +29,6 @@ export async function getRefreshToken(): Promise<string | undefined> {
 
 export async function clearSessionCookies() {
   const cookieStore = await cookies();
-  cookieStore.delete(ACCESS_COOKIE);
-  cookieStore.delete(REFRESH_COOKIE);
+  cookieStore.set(ACCESS_COOKIE, "", { ...COOKIE_OPTIONS, maxAge: 0 });
+  cookieStore.set(REFRESH_COOKIE, "", { ...COOKIE_OPTIONS, maxAge: 0 });
 }
