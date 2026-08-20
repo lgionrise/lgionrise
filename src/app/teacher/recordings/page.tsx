@@ -22,6 +22,7 @@ export default function TeacherRecordingsPage() {
   const [title, setTitle] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
+  const [provider, setProvider] = useState<"youtube" | "cloudflare">("youtube");
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,30 +40,40 @@ export default function TeacherRecordingsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !selectedBatch || !title.trim()) {
-      setError("Select a batch and enter a title before choosing a video.");
-      return;
-    }
+    if (!file || !selectedBatch || !title.trim()) { setError("Select a batch and enter a title before choosing a video."); return; }
     setError(""); setIsUploading(true);
 
-    const formData = new FormData();
-    formData.append("batch", selectedBatch);
-    formData.append("title", title);
-    formData.append("file", file);
+    if (provider === "youtube") {
+      const formData = new FormData();
+      formData.append("batch", selectedBatch);
+      formData.append("title", title);
+      formData.append("file", file);
+      const res = await fetch("/api/teacher/recordings/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      setIsUploading(false);
+      if (!res.ok) { setError(data.error || "Upload failed."); return; }
+    } else {
+      // Cloudflare Stream: get a direct-upload URL, then PUT the file straight to Cloudflare
+      const initRes = await fetch("/api/teacher/recordings/upload-cloudflare/initiate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch: selectedBatch, title }),
+      });
+      const initData = await initRes.json();
+      if (!initRes.ok) { setError(initData.error || "Could not start upload."); setIsUploading(false); return; }
 
-    const res = await fetch("/api/teacher/recordings/upload", { method: "POST", body: formData });
-    const data = await res.json();
-
-    setIsUploading(false);
-    if (!res.ok) { setError(data.error || "Upload failed."); return; }
+      const uploadForm = new FormData();
+      uploadForm.append("file", file);
+      const putRes = await fetch(initData.upload_url, { method: "POST", body: uploadForm });
+      setIsUploading(false);
+      if (!putRes.ok) { setError("Upload to Cloudflare failed."); return; }
+    }
 
     setTitle(""); setSelectedBatch("");
     if (fileInputRef.current) fileInputRef.current.value = "";
     load();
   };
-
   return (
     <>
       <MobileTopBar firstName="" lastName="" role="teacher" />
@@ -76,6 +87,16 @@ export default function TeacherRecordingsPage() {
             <option value="">Select batch</option>
             {batches.map((b) => <option key={b.public_id} value={b.public_id}>{b.title}</option>)}
           </select>
+          <div className="flex gap-2 mb-3">
+  <button type="button" onClick={() => setProvider("youtube")}
+    className={`flex-1 text-xs font-semibold py-2 rounded-xl ${provider === "youtube" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"}`}>
+    YouTube
+  </button>
+  <button type="button" onClick={() => setProvider("cloudflare")}
+    className={`flex-1 text-xs font-semibold py-2 rounded-xl ${provider === "cloudflare" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"}`}>
+    Cloudflare Stream
+  </button>
+</div>
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Recording title"
             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 mb-3" />
 
