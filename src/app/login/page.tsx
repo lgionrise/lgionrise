@@ -38,16 +38,21 @@ export default function LoginPage() {
 
     if (!res.ok) { setError(data.error || "Login failed."); setIsLoading(false); return; }
 
-    if (data.requires_2fa) {
+    // Strict check first — 2FA response never includes a user object, so
+    // checking role before this was the bug: if requires_2fa was somehow
+    // falsy/missing, data.user would be undefined and fall through to the
+    // "unsupported account type" error even for a valid student/teacher.
+    if (data.requires_2fa === true) {
       router.push(`/login/verify-2fa?email=${encodeURIComponent(email)}`);
       return;
     }
 
-    if (data.user?.role === "teacher") router.push("/teacher");
-    else if (data.user?.role === "student") router.push("/student");
-    else { setError("This account type isn't supported on this site."); setIsLoading(false); return; }
+    if (data.user?.role === "teacher") { router.push("/teacher"); router.refresh(); return; }
+    if (data.user?.role === "student") { router.push("/student"); router.refresh(); return; }
 
-    router.refresh();
+    console.error("Unexpected login response — no 2FA flag and no valid role:", data);
+    setError("Login succeeded but the account type couldn't be determined. Please contact support.");
+    setIsLoading(false);
   };
 
   if (isCheckingSession) return null; // avoids a flash of the login form before the redirect check finishes
