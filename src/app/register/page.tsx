@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, UserRound, BookOpenCheck } from "lucide-react";
 import { BrandLogo } from "@/components/shared/brand-logo";
+import { PasswordInput } from "@/components/ui/password-input";
 import { cn } from "@/lib/utils";
 
 export default function RegisterPage() {
@@ -18,14 +19,12 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (r) => {
-        if (!r.ok) return;
-        const data = await r.json();
-        if (data.user?.role === "teacher") router.replace("/teacher");
-        else if (data.user?.role === "student") router.replace("/student");
-      })
-      .finally(() => setIsCheckingSession(false));
+    fetch("/api/auth/me").then(async (r) => {
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.user?.role === "teacher") router.replace("/teacher");
+      else if (data.user?.role === "student") router.replace("/student");
+    }).finally(() => setIsCheckingSession(false));
   }, [router]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -39,12 +38,13 @@ export default function RegisterPage() {
 
     if (!res.ok) { setError(data.error || "Registration failed."); setIsLoading(false); return; }
 
-    if (data.requiresVerification) {
-      router.push("/login?registered=true");
-      return;
-    }
-    router.push(form.role === "teacher" ? "/teacher" : "/student");
-    router.refresh();
+    // Account created — send an OTP to verify the email before letting them in.
+    await fetch("/api/auth/otp/request", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier: form.email, purpose: "signup" }),
+    });
+
+    router.push(`/verify-email?email=${encodeURIComponent(form.email)}&password=${encodeURIComponent(form.password)}&role=${form.role}`);
   };
 
   if (isCheckingSession) return null;
@@ -60,17 +60,13 @@ export default function RegisterPage() {
       <div className="flex-1 bg-slate-50 rounded-t-3xl px-6 pt-8 pb-10">
         <div className="max-w-sm mx-auto">
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <button
-              type="button" onClick={() => setForm({ ...form, role: "student" })}
-              className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border-2", form.role === "student" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white")}
-            >
+            <button type="button" onClick={() => setForm({ ...form, role: "student" })}
+              className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border-2", form.role === "student" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white")}>
               <UserRound className={cn("w-6 h-6", form.role === "student" ? "text-indigo-600" : "text-slate-400")} />
               <span className={cn("text-sm font-semibold", form.role === "student" ? "text-indigo-600" : "text-slate-600")}>Student</span>
             </button>
-            <button
-              type="button" onClick={() => setForm({ ...form, role: "teacher" })}
-              className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border-2", form.role === "teacher" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white")}
-            >
+            <button type="button" onClick={() => setForm({ ...form, role: "teacher" })}
+              className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border-2", form.role === "teacher" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-white")}>
               <BookOpenCheck className={cn("w-6 h-6", form.role === "teacher" ? "text-indigo-600" : "text-slate-400")} />
               <span className={cn("text-sm font-semibold", form.role === "teacher" ? "text-indigo-600" : "text-slate-600")}>Teacher</span>
             </button>
@@ -91,9 +87,7 @@ export default function RegisterPage() {
             <input required placeholder="Username" value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm" />
-            <input required type="password" placeholder="Password" value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm" />
+            <PasswordInput value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
 
             {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5">{error}</p>}
 
