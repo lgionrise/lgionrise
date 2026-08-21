@@ -32,30 +32,32 @@ export default function LoginPage() {
     setError(""); setIsLoading(true);
 
     const res = await fetch("/api/auth/login", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
     });
     const data = await res.json();
 
-    if (!res.ok) { setError(data.error || "Login failed."); setIsLoading(false); return; }
+    if (!res.ok) {
+      setError(data.error || "Login failed.");
+      setIsLoading(false);
+      return;
+    }
 
-    // Strict check first — 2FA response never includes a user object, so
-    // checking role before this was the bug: if requires_2fa was somehow
-    // falsy/missing, data.user would be undefined and fall through to the
-    // "unsupported account type" error even for a valid student/teacher.
     if (data.requires_2fa === true) {
-      router.push(`/login/verify-2fa?email=${encodeURIComponent(email)}`);
+      router.push(`/login/verify-2fa?email=${encodeURIComponent(email.trim().toLowerCase())}`);
       return;
     }
 
     if (data.user?.role === "teacher") { router.push("/teacher"); router.refresh(); return; }
     if (data.user?.role === "student") { router.push("/student"); router.refresh(); return; }
 
-    console.error("Unexpected login response — no 2FA flag and no valid role:", data);
+    console.error("Unexpected login response:", data);
     setError("Login succeeded but the account type couldn't be determined. Please contact support.");
     setIsLoading(false);
   };
 
-  if (isCheckingSession) return null; // avoids a flash of the login form before the redirect check finishes
+  if (isCheckingSession) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-600 to-violet-700 flex flex-col">
@@ -69,23 +71,34 @@ export default function LoginPage() {
         <div className="max-w-sm mx-auto">
           <form onSubmit={handleSubmit} className="space-y-3">
             <input
-              type="email" required placeholder="Email address" value={email}
+              type="email"
+              required
+              placeholder="Email address"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm"
             />
             <PasswordInput value={password} onChange={setPassword} />
+
             <div className="text-right">
               <Link href="/forgot-password" className="text-xs font-medium text-indigo-600">Forgot password?</Link>
             </div>
-            {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5">{error}</p>}
+
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5">{error}</p>
+            )}
+
             <button
-              type="submit" disabled={isLoading}
+              type="submit"
+              disabled={isLoading}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 mt-2 shadow-lg shadow-indigo-200"
             >
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               Sign In
             </button>
           </form>
+
           <p className="text-center text-sm text-slate-500 mt-6">
             Don&apos;t have an account? <Link href="/register" className="text-indigo-600 font-semibold">Sign up</Link>
           </p>
