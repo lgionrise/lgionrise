@@ -7,6 +7,7 @@ import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack } f
 import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Megaphone, MonitorUp, Monitor, RefreshCw } from "lucide-react";
 import { useLiveClassChat } from "@/hooks/use-live-class-chat";
 import { ChatDrawer } from "@/components/live-class/chat-drawer";
+import { Hand } from "lucide-react";
 
 type ConnectionState = "connecting" | "live" | "reconnecting" | "error";
 
@@ -23,7 +24,7 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
   const [announceText, setAnnounceText] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSharingScreen, setIsSharingScreen] = useState(false);
-
+  const [handRaisedBy, setHandRaisedBy] = useState<string | null>(null);
   const clientRef = useRef<IAgoraRTCClient | null>(null);
   const localVideoTrackRef = useRef<ICameraVideoTrack | null>(null);
   const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
@@ -31,7 +32,12 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
   const cameraDevicesRef = useRef<MediaDeviceInfo[]>([]);
   const currentCameraIndexRef = useRef(0);
 
-  const { messages, isConnected, sendMessage } = useLiveClassChat(publicId);
+  const { messages, isConnected, sendMessage } = useLiveClassChat(publicId, (type, senderName) => {
+    if (type === "raise_hand") {
+      setHandRaisedBy(senderName);
+      setTimeout(() => setHandRaisedBy(null), 6000);
+    }
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -182,6 +188,12 @@ export default function LiveClassHostPage({ params }: { params: Promise<{ public
         </span>
         {isSharingScreen && <span className="text-xs font-medium px-3 py-1 rounded-full bg-emerald-600 text-white">Sharing Screen</span>}
       </div>
+
+      {handRaisedBy && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-sm font-medium px-4 py-2 rounded-full flex items-center gap-2 z-20">
+          <Hand className="w-4 h-4" /> {handRaisedBy} raised their hand
+        </div>
+      )}
 
       <div className="flex-1 relative">
         <div ref={videoRef} className="w-full h-full" />
