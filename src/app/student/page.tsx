@@ -9,6 +9,7 @@ import { QuickActionButton } from "@/components/ui/quick-action-button";
 import { formatDateTime } from "@/lib/utils";
 import { StudentUser } from "@/lib/current-student";
 import { BookOpen, PlayCircle, ClipboardList, HelpCircle, Wallet, Video } from "lucide-react";
+import { FileText } from "lucide-react";
 
 export default function StudentDashboardPage() {
   const [user, setUser] = useState<StudentUser | null>(null);
@@ -57,6 +58,7 @@ export default function StudentDashboardPage() {
             <QuickActionButton label="Browse Batches" icon={BookOpen} color="indigo" href="/student/batches" />
             <QuickActionButton label="Recordings" icon={PlayCircle} color="teal" href="/student/recordings" />
             <QuickActionButton label="Tests" icon={ClipboardList} color="amber" href="/student/tests" />
+            <QuickActionButton label="Study Material" icon={FileText} color="sky" href="/student/content" />
             <QuickActionButton label="Doubts" icon={HelpCircle} color="rose" href="/student/doubts" />
             <QuickActionButton label="Payments" icon={Wallet} color="sky" href="/student/payments" />
           </div>
